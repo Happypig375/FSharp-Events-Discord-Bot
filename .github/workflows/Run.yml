@@ -16,3 +16,4 @@ jobs:
         env:
           BOT_LOGIN_TOKEN: ${{ secrets.BOT_LOGIN_TOKEN }}
         run: dotnet fsi Bot.fsx
+      - uses: gautamkrishnar/keepalive-workflow@master # prevent GitHub from suspending this action due to repository inactivity
