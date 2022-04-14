@@ -16,11 +16,12 @@ task {
     let completion = System.Threading.Tasks.TaskCompletionSource()
     client.add_Ready(fun () -> task {
         printfn "Ready. Processing started."
-        let utcNow = System.DateTime.UtcNow
+        let utcNowOffset = System.DateTimeOffset.UtcNow
+        let utcNow = utcNowOffset.UtcDateTime
         for guild in client.Guilds do
             let existingDiscordEvents = System.Linq.Enumerable.ToDictionary (guild.Events |> Seq.filter (fun e -> e.Location = identifiableLocation), fun e -> e.Name)
             for e in calendarEvents do
-                if e.DtStart.AsUtc > utcNow then
+                if e.DtStart.AsUtc > utcNow then // Don't add new already started events
                     try
                         match (existingDiscordEvents.Remove: _ -> _ * _) e.Summary with
                         | false, _ ->
@@ -41,8 +42,9 @@ task {
                             printfn $"Modified scheduled event '{e.Summary}' for '{guild}'."
                     with exn -> printfn $"Error processing scheduled event '{e.Summary}' for '{guild}'.\n{exn}"
             for remainingDiscordEvent in existingDiscordEvents.Values do
-                do! remainingDiscordEvent.DeleteAsync()
-                printfn $"Removed scheduled event '{remainingDiscordEvent.Name}' for '{guild}'."
+                if remainingDiscordEvent.StartTime > utcNowOffset then // Don't remove already started events
+                    do! remainingDiscordEvent.DeleteAsync()
+                    printfn $"Removed scheduled event '{remainingDiscordEvent.Name}' for '{guild}'."
         printfn "Processing finished."
         completion.TrySetResult() |> ignore
     })
