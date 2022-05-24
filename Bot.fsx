@@ -1,5 +1,5 @@
-#r "nuget: Ical.NET"
-#r "nuget: Discord.NET"
+#r "nuget: Ical.NET, 4.2.0"
+#r "nuget: Discord.NET, 3.6.1"
 let identifiableLocation = "International F# online event, see description"
 task {
     printfn "Started."
