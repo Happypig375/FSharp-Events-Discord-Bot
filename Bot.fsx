@@ -35,7 +35,7 @@ task {
         for guild in client.Guilds do
             if Map.containsKey guild.Id sourceGuilds then () else // Ignore source guilds
             let existingDiscordEvents = System.Linq.Enumerable.ToDictionary (guild.Events |> Seq.filter (fun e -> e.Creator.Id = client.CurrentUser.Id), fun e -> e.Location, e.Name)
-            let syncOneEvent location name startTime description endTime icon = task {
+            let syncOneEvent location name startTime description endTime coverImage = task {
                 if filterEventByTime startTime endTime then
                     try
                         // Discord API limitation: string length limits
@@ -48,10 +48,10 @@ task {
                         | false, _ ->
                             printfn $"Creating '{location}' event '{name}' for '{guild}'..."
                             let! _ = guild.CreateEventAsync(name, startTime, Discord.GuildScheduledEventType.External,
-                                Discord.GuildScheduledEventPrivacyLevel.Private, description, System.Nullable endTime, System.Nullable(), location, new Discord.Image(icon: System.IO.Stream))
+                                Discord.GuildScheduledEventPrivacyLevel.Private, description, System.Nullable endTime, System.Nullable(), location, new Discord.Image(coverImage: System.IO.Stream))
                             ()
                         | true, existingDiscordEvent ->
-                            if existingDiscordEvent.Name = name && false
+                            if existingDiscordEvent.Name = name
                                 && existingDiscordEvent.StartTime = startTime
                                 && existingDiscordEvent.Type = Discord.GuildScheduledEventType.External
                                 && existingDiscordEvent.PrivacyLevel = Discord.GuildScheduledEventPrivacyLevel.Private
@@ -70,16 +70,19 @@ task {
                                 props.EndTime <- endTime
                                 props.ChannelId <- Discord.Optional.Create(System.Nullable())
                                 props.Location <- location
-                                props.CoverImage <- new Discord.Image(icon: System.IO.Stream) |> System.Nullable |> Discord.Optional
+                                props.CoverImage <- new Discord.Image(coverImage: System.IO.Stream) |> System.Nullable |> Discord.Optional
                             )
                     with exn -> printfn $"Error processing '{location}' event '{name}' for '{guild}'.\n{exn}"
             }
             for e in calendarEvents do
                 do! syncOneEvent "F# Events Calendar https://sergeytihon.com/f-events/" e.Summary e.DtStart.AsDateTimeOffset e.Description e.DtEnd.AsDateTimeOffset calendarStream
             for location, icon, e in sourceEvents do
-                let! icon = icon // Can't "use" here or ObjectDisposedException will occur
                 for e in e do
-                    do! syncOneEvent location e.Name e.StartTime e.Description (if e.EndTime.HasValue then e.EndTime.GetValueOrDefault() else e.StartTime.AddHours 1.) icon
+                    let! coverImage = // Can't "use" here or ObjectDisposedException will occur for server icon
+                        if isNull e.CoverImageId
+                        then icon
+                        else http.GetStreamAsync(e.GetCoverImageUrl())
+                    do! syncOneEvent location e.Name e.StartTime e.Description (if e.EndTime.HasValue then e.EndTime.GetValueOrDefault() else e.StartTime.AddHours 1.) coverImage
             for remainingDiscordEvent in existingDiscordEvents.Values do
                 if remainingDiscordEvent.StartTime > now then // Don't remove already started events
                     do! remainingDiscordEvent.DeleteAsync()
