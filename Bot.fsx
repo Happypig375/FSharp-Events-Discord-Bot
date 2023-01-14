@@ -27,14 +27,16 @@ task {
                     // Discord API limitation: see beliow, location max length 100
                     $"{sourceGuild.Name[..99 - invite.Length - 1]} {invite}", iconStream, sourceGuild.Events
         ]
-        printfn $"Initialized events. There are {calendarEvents.Count} F# calendar events and {List.length sourceEvents} source guild events."
         let now = System.DateTimeOffset.UtcNow
         let maxEnd = now.AddYears(5).AddSeconds(-1.)
+        // Discord API limitation: Don't add new already started events (including now) or start time >= 5 years into future (precise to seconds) or start time > end time (can equal)
+        let filterEventByTime startTime endTime = now < startTime && startTime <= maxEnd && startTime <= endTime
+        printfn $"Initialized events. There are {calendarEvents.Count} F# calendar events ({calendarEvents |> Seq.filter (fun e -> filterEventByTime e.DtStart.AsDateTimeOffset e.DtEnd.AsDateTimeOffset) |> Seq.length} applicable) and {List.length sourceEvents} source guild events."
         for guild in client.Guilds do
             if Map.containsKey guild.Id sourceGuilds then () else // Ignore source guilds
             let existingDiscordEvents = System.Linq.Enumerable.ToDictionary (guild.Events |> Seq.filter (fun e -> e.Creator.Id = client.CurrentUser.Id), fun e -> e.Location, e.Name)
             let syncOneEvent location name startTime description endTime icon = task {
-                if now < startTime && startTime <= maxEnd && startTime <= endTime then // Discord API limitation: Don't add new already started events (including now) or start time >= 5 years into future (precise to seconds) or start time > end time (can equal)
+                if filterEventByTime startTime endTime then
                     try
                         // Discord API limitation: string length limits
                         let name = (name: string)[..99]
@@ -75,7 +77,7 @@ task {
             for e in calendarEvents do
                 do! syncOneEvent "F# Events Calendar https://sergeytihon.com/f-events/" e.Summary e.DtStart.AsDateTimeOffset e.Description e.DtEnd.AsDateTimeOffset calendarStream
             for location, icon, e in sourceEvents do
-                use! icon = icon
+                let! icon = icon // Can't "use" here or ObjectDisposedException will occur
                 for e in e do
                     do! syncOneEvent location e.Name e.StartTime e.Description (if e.EndTime.HasValue then e.EndTime.GetValueOrDefault() else e.StartTime.AddHours 1.) icon
             for remainingDiscordEvent in existingDiscordEvents.Values do
