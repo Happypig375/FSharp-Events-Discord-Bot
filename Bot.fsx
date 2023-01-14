@@ -49,7 +49,7 @@ task {
                             let mutable coverImage = System.Nullable()
                             match coverImageUrl with
                             | Some coverImageUrl ->
-                                use! coverImageStream = http.GetStreamAsync coverImageUrl
+                                use! coverImageStream = http.GetStreamAsync(coverImageUrl: string)
                                 coverImage <- new Discord.Image(coverImageStream: System.IO.Stream) |> System.Nullable
                             | None -> ()
                             let! _ = guild.CreateEventAsync(name, startTime, Discord.GuildScheduledEventType.External,
