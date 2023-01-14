@@ -66,6 +66,12 @@ task {
                                 && existingDiscordEvent.Location = location
                             then () else // Minimise request count
                             printfn $"Modifing '{location}' event '{name}' for '{guild}'..."
+                            let mutable coverImage = System.Nullable()
+                            match coverImageUrl with
+                            | Some coverImageUrl ->
+                                use! coverImageStream = http.GetStreamAsync(coverImageUrl: string)
+                                coverImage <- new Discord.Image(coverImageStream: System.IO.Stream) |> System.Nullable
+                            | None -> ()
                             do! existingDiscordEvent.ModifyAsync(fun props ->
                                 props.Name <- name
                                 props.StartTime <- startTime
@@ -75,11 +81,7 @@ task {
                                 props.EndTime <- endTime
                                 props.ChannelId <- Discord.Optional.Create(System.Nullable())
                                 props.Location <- location
-                                match coverImageUrl with
-                                | Some coverImageUrl ->
-                                    use! coverImageStream = http.GetStreamAsync coverImageUrl
-                                    props.CoverImage <- (new Discord.Image(coverImageStream: System.IO.Stream) |> System.Nullable) |> Discord.Optional
-                                | None -> props.CoverImage <- System.Nullable() |> Discord.Optional
+                                props.CoverImage <- coverImage |> Discord.Optional
                             )
                     with exn -> printfn $"Error processing '{location}' event '{name}' for '{guild}'.\n{exn}"
             }
