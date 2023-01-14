@@ -30,8 +30,8 @@ task {
         let maxEnd = now.AddYears(5).AddSeconds(-1.)
         // Discord API limitation: Don't add new already started events (including now) or start time >= 5 years into future (precise to seconds) or start time > end time (can equal)
         let filterEventByTime startTime endTime = now < startTime && startTime <= maxEnd && startTime <= endTime
-        printfn $"Initialized events. There are {calendarEvents.Count} F# calendar events ({calendarEvents |> Seq.filter (fun e -> filterEventByTime e.DtStart.AsDateTimeOffset e.DtEnd.AsDateTimeOffset) |> Seq.length} applicable) \
-                 and {sourceGuildEvents |> Seq.collect (fun (_, _, events) -> events) |> Seq.length} source guild events."
+        printfn $"Initialized events. There are {calendarEvents.Count} F# calendar event(s) ({calendarEvents |> Seq.filter (fun e -> filterEventByTime e.DtStart.AsDateTimeOffset e.DtEnd.AsDateTimeOffset) |> Seq.length} applicable) \
+                 and {sourceGuildEvents |> Seq.collect (fun (_, _, events) -> events) |> Seq.length} source guild event(s)."
         for guild in client.Guilds do
             if Map.containsKey guild.Id sourceGuilds then () else // Ignore source guilds
             let existingDiscordEvents = System.Linq.Enumerable.ToDictionary (guild.Events |> Seq.filter (fun e -> e.Creator.Id = client.CurrentUser.Id), fun e -> e.Location, e.Name)
