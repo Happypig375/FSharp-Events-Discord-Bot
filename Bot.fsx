@@ -34,7 +34,7 @@ task {
         for guild in client.Guilds do
             if Map.containsKey guild.Id sourceGuilds then () else // Ignore source guilds
             let existingDiscordEvents = System.Linq.Enumerable.ToDictionary (guild.Events |> Seq.filter (fun e -> e.Creator.Id = client.CurrentUser.Id), fun e -> e.Location, e.Name)
-            let syncOneEvent location name startTime description endTime coverImage = task {
+            let syncOneEvent location name startTime description endTime coverImageUrl = task {
                 if filterEventByTime startTime endTime then
                     try
                         // Discord API limitation: string length limits
@@ -46,8 +46,14 @@ task {
                         match (existingDiscordEvents.Remove: _ -> _ * _) (location, name) with
                         | false, _ ->
                             printfn $"Creating '{location}' event '{name}' for '{guild}'..."
+                            let mutable coverImage = System.Nullable()
+                            match coverImageUrl with
+                            | Some coverImageUrl ->
+                                use! coverImageStream = http.GetStreamAsync coverImageUrl
+                                coverImage <- new Discord.Image(coverImageStream: System.IO.Stream) |> System.Nullable
+                            | None -> ()
                             let! _ = guild.CreateEventAsync(name, startTime, Discord.GuildScheduledEventType.External,
-                                Discord.GuildScheduledEventPrivacyLevel.Private, description, System.Nullable endTime, System.Nullable(), location, new Discord.Image(coverImage: System.IO.Stream))
+                                Discord.GuildScheduledEventPrivacyLevel.Private, description, System.Nullable endTime, System.Nullable(), location, coverImage)
                             ()
                         | true, existingDiscordEvent ->
                             if existingDiscordEvent.Name = name
@@ -69,16 +75,21 @@ task {
                                 props.EndTime <- endTime
                                 props.ChannelId <- Discord.Optional.Create(System.Nullable())
                                 props.Location <- location
-                                props.CoverImage <- new Discord.Image(coverImage: System.IO.Stream) |> System.Nullable |> Discord.Optional
+                                match coverImageUrl with
+                                | Some coverImageUrl ->
+                                    use! coverImageStream = http.GetStreamAsync coverImageUrl
+                                    props.CoverImage <- (new Discord.Image(coverImageStream: System.IO.Stream) |> System.Nullable) |> Discord.Optional
+                                | None -> props.CoverImage <- System.Nullable() |> Discord.Optional
                             )
                     with exn -> printfn $"Error processing '{location}' event '{name}' for '{guild}'.\n{exn}"
             }
             for e in calendarEvents do
-                do! syncOneEvent "F# Events Calendar https://sergeytihon.com/f-events/" e.Summary e.DtStart.AsDateTimeOffset e.Description e.DtEnd.AsDateTimeOffset calendarStream
+                do! syncOneEvent "F# Events Calendar https://sergeytihon.com/f-events/" e.Summary e.DtStart.AsDateTimeOffset e.Description e.DtEnd.AsDateTimeOffset None
             for location, coverImageUrl, e in sourceEvents do
                 for e in e do
-                    use! coverImage = http.GetStreamAsync(if isNull e.CoverImageId then coverImageUrl else e.GetCoverImageUrl())
-                    do! syncOneEvent location e.Name e.StartTime e.Description (if e.EndTime.HasValue then e.EndTime.GetValueOrDefault() else e.StartTime.AddHours 1.) coverImage
+                    do! syncOneEvent location e.Name e.StartTime e.Description
+                         (if e.EndTime.HasValue then e.EndTime.GetValueOrDefault() else e.StartTime.AddHours 1.)
+                         (Some <| if isNull e.CoverImageId then coverImageUrl else e.GetCoverImageUrl())
             for remainingDiscordEvent in existingDiscordEvents.Values do
                 if remainingDiscordEvent.StartTime > now then // Don't remove already started events
                     printfn $"Removing event '{remainingDiscordEvent.Name}' for '{guild}'..."
