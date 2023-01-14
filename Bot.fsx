@@ -18,7 +18,7 @@ task {
         // https://sergeytihon.com/f-events/
         use! calendarStream = http.GetStreamAsync "https://calendar.google.com/calendar/ical/retcpic7o1iggr3cmqio8lcu8k%40group.calendar.google.com/public/basic.ics"
         let calendarEvents = Ical.Net.Calendar.Load(calendarStream).Events
-        let sourceEvents =  [
+        let sourceGuildEvents =  [
             for KeyValue (id, (invite, coverImageUrl)) in sourceGuilds do
                 let sourceGuild = client.GetGuild id
                 // Don't crash if we're not in one of the source guilds
@@ -31,7 +31,7 @@ task {
         // Discord API limitation: Don't add new already started events (including now) or start time >= 5 years into future (precise to seconds) or start time > end time (can equal)
         let filterEventByTime startTime endTime = now < startTime && startTime <= maxEnd && startTime <= endTime
         printfn $"Initialized events. There are {calendarEvents.Count} F# calendar events ({calendarEvents |> Seq.filter (fun e -> filterEventByTime e.DtStart.AsDateTimeOffset e.DtEnd.AsDateTimeOffset) |> Seq.length} applicable)\
-                 and {List.length sourceEvents} source guild events ({calendarEvents |> Seq.filter (fun e -> filterEventByTime e.StartTime (if e.EndTime.HasValue then e.EndTime.GetValueOrDefault() else e.StartTime.AddHours 1.)) |> Seq.length} applicable)."
+                 and {List.length sourceGuildEvents} source guild events ({sourceGuildEvents |> Seq.filter (fun e -> filterEventByTime e.StartTime (if e.EndTime.HasValue then e.EndTime.GetValueOrDefault() else e.StartTime.AddHours 1.)) |> Seq.length} applicable)."
         for guild in client.Guilds do
             if Map.containsKey guild.Id sourceGuilds then () else // Ignore source guilds
             let existingDiscordEvents = System.Linq.Enumerable.ToDictionary (guild.Events |> Seq.filter (fun e -> e.Creator.Id = client.CurrentUser.Id), fun e -> e.Location, e.Name)
@@ -88,7 +88,7 @@ task {
             }
             for e in calendarEvents do
                 do! syncOneEvent "F# Events Calendar https://sergeytihon.com/f-events/" e.Summary e.DtStart.AsDateTimeOffset e.Description e.DtEnd.AsDateTimeOffset None
-            for location, coverImageUrl, e in sourceEvents do
+            for location, coverImageUrl, e in sourceGuildEvents do
                 for e in e do
                     do! syncOneEvent location e.Name e.StartTime e.Description
                          (if e.EndTime.HasValue then e.EndTime.GetValueOrDefault() else e.StartTime.AddHours 1.)
