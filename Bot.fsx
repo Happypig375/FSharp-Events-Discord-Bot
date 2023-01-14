@@ -50,7 +50,7 @@ task {
                                 Discord.GuildScheduledEventPrivacyLevel.Private, description, System.Nullable endTime, System.Nullable(), location, new Discord.Image(coverImage: System.IO.Stream))
                             ()
                         | true, existingDiscordEvent ->
-                            if existingDiscordEvent.Name = name && false
+                            if existingDiscordEvent.Name = name
                                 && existingDiscordEvent.StartTime = startTime
                                 && existingDiscordEvent.Type = Discord.GuildScheduledEventType.External
                                 && existingDiscordEvent.PrivacyLevel = Discord.GuildScheduledEventPrivacyLevel.Private
