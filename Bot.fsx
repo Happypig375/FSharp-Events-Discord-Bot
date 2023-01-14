@@ -7,10 +7,6 @@ let sourceGuilds = Map [
 ]
 task {
     printfn "Started."
-    use http = new System.Net.Http.HttpClient()
-    // https://sergeytihon.com/f-events/
-    use! calendarStream = http.GetStreamAsync "https://calendar.google.com/calendar/ical/retcpic7o1iggr3cmqio8lcu8k%40group.calendar.google.com/public/basic.ics"
-    let calendarEvents = Ical.Net.Calendar.Load(calendarStream).Events
     use client = new Discord.WebSocket.DiscordSocketClient()
     client.add_Log(fun msg -> task { printfn $"{msg}" })
     do! client.LoginAsync(Discord.TokenType.Bot, System.Environment.GetEnvironmentVariable "BOT_LOGIN_TOKEN")
@@ -18,6 +14,10 @@ task {
     let completion = System.Threading.Tasks.TaskCompletionSource()
     client.add_Ready(fun () -> task {
         printfn "Ready. Processing started."
+        use http = new System.Net.Http.HttpClient()
+        // https://sergeytihon.com/f-events/
+        use! calendarStream = http.GetStreamAsync "https://calendar.google.com/calendar/ical/retcpic7o1iggr3cmqio8lcu8k%40group.calendar.google.com/public/basic.ics"
+        let calendarEvents = Ical.Net.Calendar.Load(calendarStream).Events
         let sourceEvents =  [
             for KeyValue (id, invite) in sourceGuilds do
                 let sourceGuild = client.GetGuild id
@@ -27,6 +27,7 @@ task {
                     // Discord API limitation: see beliow, location max length 100
                     $"{sourceGuild.Name[..99 - invite.Length - 1]} {invite}", iconStream, sourceGuild.Events
         ]
+        printfn $"Initialized events. There are {calendarEvents.Count} F# calendar events and {List.length sourceEvents} source guild events."
         let now = System.DateTimeOffset.UtcNow
         let maxEnd = now.AddYears(5).AddSeconds(-1.)
         for guild in client.Guilds do
