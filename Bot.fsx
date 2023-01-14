@@ -77,7 +77,7 @@ task {
                 do! syncOneEvent "F# Events Calendar https://sergeytihon.com/f-events/" e.Summary e.DtStart.AsDateTimeOffset e.Description e.DtEnd.AsDateTimeOffset calendarStream
             for location, iconUrl, e in sourceEvents do
                 for e in e do
-                    use! icon = http.GetStreamAsync <| if isNull e.CoverImageId then iconUrl else e.GetCoverImageUrl()
+                    use! icon = http.GetStreamAsync(if isNull e.CoverImageId then iconUrl else e.GetCoverImageUrl())
                     do! syncOneEvent location e.Name e.StartTime e.Description (if e.EndTime.HasValue then e.EndTime.GetValueOrDefault() else e.StartTime.AddHours 1.) icon
             for remainingDiscordEvent in existingDiscordEvents.Values do
                 if remainingDiscordEvent.StartTime > now then // Don't remove already started events
