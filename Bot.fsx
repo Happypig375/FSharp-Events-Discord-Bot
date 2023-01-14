@@ -81,8 +81,8 @@ task {
                     do! syncOneEvent location e.Name e.StartTime e.Description (if e.EndTime.HasValue then e.EndTime.GetValueOrDefault() else e.StartTime.AddHours 1.) coverImage
             for remainingDiscordEvent in existingDiscordEvents.Values do
                 if remainingDiscordEvent.StartTime > now then // Don't remove already started events
+                    printfn $"Removing event '{remainingDiscordEvent.Name}' for '{guild}'..."
                     do! remainingDiscordEvent.DeleteAsync()
-                    printfn $"Removed event '{remainingDiscordEvent.Name}' for '{guild}'."
         printfn "Processing finished."
         completion.TrySetResult() |> ignore
     })
