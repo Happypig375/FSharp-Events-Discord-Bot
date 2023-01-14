@@ -23,9 +23,8 @@ task {
                 let sourceGuild = client.GetGuild id
                 // Don't crash if we're not in one of the source guilds
                 if sourceGuild <> null then
-                    let iconStream = http.GetStreamAsync sourceGuild.IconUrl
                     // Discord API limitation: see beliow, location max length 100
-                    $"{sourceGuild.Name[..99 - invite.Length - 1]} {invite}", iconStream, sourceGuild.Events
+                    $"{sourceGuild.Name[..99 - invite.Length - 1]} {invite}", sourceGuild.IconUrl, sourceGuild.Events
         ]
         let now = System.DateTimeOffset.UtcNow
         let maxEnd = now.AddYears(5).AddSeconds(-1.)
@@ -51,7 +50,7 @@ task {
                                 Discord.GuildScheduledEventPrivacyLevel.Private, description, System.Nullable endTime, System.Nullable(), location, new Discord.Image(coverImage: System.IO.Stream))
                             ()
                         | true, existingDiscordEvent ->
-                            if existingDiscordEvent.Name = name
+                            if existingDiscordEvent.Name = name && false
                                 && existingDiscordEvent.StartTime = startTime
                                 && existingDiscordEvent.Type = Discord.GuildScheduledEventType.External
                                 && existingDiscordEvent.PrivacyLevel = Discord.GuildScheduledEventPrivacyLevel.Private
@@ -76,13 +75,10 @@ task {
             }
             for e in calendarEvents do
                 do! syncOneEvent "F# Events Calendar https://sergeytihon.com/f-events/" e.Summary e.DtStart.AsDateTimeOffset e.Description e.DtEnd.AsDateTimeOffset calendarStream
-            for location, icon, e in sourceEvents do
+            for location, iconUrl, e in sourceEvents do
                 for e in e do
-                    let! coverImage = // Can't "use" here or ObjectDisposedException will occur for server icon
-                        if isNull e.CoverImageId
-                        then icon
-                        else http.GetStreamAsync(e.GetCoverImageUrl())
-                    do! syncOneEvent location e.Name e.StartTime e.Description (if e.EndTime.HasValue then e.EndTime.GetValueOrDefault() else e.StartTime.AddHours 1.) coverImage
+                    use! icon = http.GetStreamAsync <| if isNull e.CoverImageId then iconUrl else e.GetCoverImageUrl()
+                    do! syncOneEvent location e.Name e.StartTime e.Description (if e.EndTime.HasValue then e.EndTime.GetValueOrDefault() else e.StartTime.AddHours 1.) icon
             for remainingDiscordEvent in existingDiscordEvents.Values do
                 if remainingDiscordEvent.StartTime > now then // Don't remove already started events
                     do! remainingDiscordEvent.DeleteAsync()
