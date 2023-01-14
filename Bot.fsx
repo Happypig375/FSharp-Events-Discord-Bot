@@ -45,10 +45,10 @@ task {
                         | false, _ ->
                             printfn $"Creating '{location}' event '{name}' for '{guild}'..."
                             let! _ = guild.CreateEventAsync(name, startTime, Discord.GuildScheduledEventType.External,
-                                Discord.GuildScheduledEventPrivacyLevel.Private, description, System.Nullable endTime, System.Nullable(), location)
+                                Discord.GuildScheduledEventPrivacyLevel.Private, description, System.Nullable endTime, System.Nullable(), location, new Discord.Image(icon: System.IO.Stream))
                             ()
                         | true, existingDiscordEvent ->
-                            if existingDiscordEvent.Name = name
+                            if existingDiscordEvent.Name = name && false
                                 && existingDiscordEvent.StartTime = startTime
                                 && existingDiscordEvent.Type = Discord.GuildScheduledEventType.External
                                 && existingDiscordEvent.PrivacyLevel = Discord.GuildScheduledEventPrivacyLevel.Private
