@@ -2,8 +2,8 @@
 #r "nuget: Discord.NET, 3.9.0"
 // F#-related Discord servers that may schedule events
 let sourceGuilds = Map [
-    716980335593914419UL, "https://discord.gg/bpTJMbSSYK" // Fabulous
-    940511234179096586UL, "https://discord.gg/D5QXvQrBVa" // Fantomas
+    716980335593914419UL, ("https://discord.gg/bpTJMbSSYK", "https://raw.githubusercontent.com/fabulous-dev/Fabulous/v2.1/logo/logo-title.png") // Fabulous
+    940511234179096586UL, ("https://discord.gg/D5QXvQrBVa", "https://cdn.discordapp.com/icons/940511234179096586/c48720faa474402341a73385e911510b.png") // Fantomas
 ]
 task {
     printfn "Started."
@@ -19,12 +19,12 @@ task {
         use! calendarStream = http.GetStreamAsync "https://calendar.google.com/calendar/ical/retcpic7o1iggr3cmqio8lcu8k%40group.calendar.google.com/public/basic.ics"
         let calendarEvents = Ical.Net.Calendar.Load(calendarStream).Events
         let sourceEvents =  [
-            for KeyValue (id, invite) in sourceGuilds do
+            for KeyValue (id, (invite, coverImageUrl)) in sourceGuilds do
                 let sourceGuild = client.GetGuild id
                 // Don't crash if we're not in one of the source guilds
                 if sourceGuild <> null then
                     // Discord API limitation: see beliow, location max length 100
-                    $"{sourceGuild.Name[..99 - invite.Length - 1]} {invite}", sourceGuild.IconUrl, sourceGuild.Events
+                    $"{sourceGuild.Name[..99 - invite.Length - 1]} {invite}", coverImageUrl, sourceGuild.Events
         ]
         let now = System.DateTimeOffset.UtcNow
         let maxEnd = now.AddYears(5).AddSeconds(-1.)
@@ -50,7 +50,7 @@ task {
                                 Discord.GuildScheduledEventPrivacyLevel.Private, description, System.Nullable endTime, System.Nullable(), location, new Discord.Image(coverImage: System.IO.Stream))
                             ()
                         | true, existingDiscordEvent ->
-                            if existingDiscordEvent.Name = name
+                            if existingDiscordEvent.Name = name && false
                                 && existingDiscordEvent.StartTime = startTime
                                 && existingDiscordEvent.Type = Discord.GuildScheduledEventType.External
                                 && existingDiscordEvent.PrivacyLevel = Discord.GuildScheduledEventPrivacyLevel.Private
@@ -75,9 +75,9 @@ task {
             }
             for e in calendarEvents do
                 do! syncOneEvent "F# Events Calendar https://sergeytihon.com/f-events/" e.Summary e.DtStart.AsDateTimeOffset e.Description e.DtEnd.AsDateTimeOffset calendarStream
-            for location, iconUrl, e in sourceEvents do
+            for location, coverImageUrl, e in sourceEvents do
                 for e in e do
-                    use! icon = http.GetStreamAsync(if isNull e.CoverImageId then iconUrl else e.GetCoverImageUrl())
+                    use! icon = http.GetStreamAsync(if isNull e.CoverImageId then coverImageUrl else e.GetCoverImageUrl())
                     do! syncOneEvent location e.Name e.StartTime e.Description (if e.EndTime.HasValue then e.EndTime.GetValueOrDefault() else e.StartTime.AddHours 1.) icon
             for remainingDiscordEvent in existingDiscordEvents.Values do
                 if remainingDiscordEvent.StartTime > now then // Don't remove already started events
