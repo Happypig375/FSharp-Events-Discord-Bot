@@ -15,18 +15,18 @@ task {
     client.add_Log(fun msg -> task { printfn $"{msg}" })
     do! client.LoginAsync(Discord.TokenType.Bot, System.Environment.GetEnvironmentVariable "BOT_LOGIN_TOKEN")
     do! client.StartAsync()
-    let sourceEvents =  [
-        for KeyValue (id, invite) in sourceGuilds do
-            let sourceGuild = client.GetGuild id
-            // Don't crash if we're not in one of the source guilds
-            if sourceGuild <> null then
-                let iconStream = http.GetStreamAsync sourceGuild.IconUrl
-                // Discord API limitation: see beliow, location max length 100
-                $"{sourceGuild.Name[..99 - invite.Length - 1]} {invite}", iconStream, sourceGuild.Events
-    ]
     let completion = System.Threading.Tasks.TaskCompletionSource()
     client.add_Ready(fun () -> task {
         printfn "Ready. Processing started."
+        let sourceEvents =  [
+            for KeyValue (id, invite) in sourceGuilds do
+                let sourceGuild = client.GetGuild id
+                // Don't crash if we're not in one of the source guilds
+                if sourceGuild <> null then
+                    let iconStream = http.GetStreamAsync sourceGuild.IconUrl
+                    // Discord API limitation: see beliow, location max length 100
+                    $"{sourceGuild.Name[..99 - invite.Length - 1]} {invite}", iconStream, sourceGuild.Events
+        ]
         let now = System.DateTimeOffset.UtcNow
         let maxEnd = now.AddYears(5).AddSeconds(-1.)
         for guild in client.Guilds do
