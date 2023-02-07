@@ -1,6 +1,5 @@
-#i "nuget: https://www.myget.org/F/discord-net/api/v3/index.json"
 #r "nuget: Ical.NET, 4.2.0"
-#r "nuget: Discord.NET, 3.9.0-build-20230206.12" // A MyGet version to work around https://github.com/discord-net/Discord.Net/issues/2576
+#r "nuget: Discord.NET, 3.9.0"
 // F#-related Discord servers that may schedule events
 let sourceGuilds = Map [
     716980335593914419UL, ("https://discord.gg/bpTJMbSSYK", "https://raw.githubusercontent.com/fabulous-dev/Fabulous/main/logo/logo-title.png") // Fabulous
@@ -95,7 +94,7 @@ task {
                 for e in e do
                     do! syncOneEvent location e.Name e.StartTime e.Description
                          (if e.EndTime.HasValue then e.EndTime.GetValueOrDefault() else e.StartTime.AddHours 1.)
-                         (Some <| if isNull e.CoverImageId then coverImageUrl else e.GetCoverImageUrl())
+                         (Some <| if isNull e.CoverImageId then coverImageUrl else e.GetCoverImageUrl().Replace($"/{message.Guild.Id}", "") (* work around https://github.com/discord-net/Discord.Net/issues/2576 *))
             for remainingDiscordEvent in existingDiscordEvents.Values do
                 if remainingDiscordEvent.StartTime > now then // Don't remove already started events
                     printfn $"Removing event '{remainingDiscordEvent.Name}' for '{guild}'..."
