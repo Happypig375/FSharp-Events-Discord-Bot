@@ -47,15 +47,17 @@ task {
                         match (existingDiscordEvents.Remove: _ -> _ * _) (location, name) with
                         | false, _ ->
                             printfn $"Creating '{location}' event '{name}' for '{guild}' with cover image {coverImageUrl}..."
-                            let mutable coverImage = System.Nullable()
+                            let create coverImage =
+                                guild.CreateEventAsync(name, startTime, Discord.GuildScheduledEventType.External,
+                                    Discord.GuildScheduledEventPrivacyLevel.Private, description, System.Nullable endTime, System.Nullable(), location, coverImage)
                             match coverImageUrl with
                             | Some coverImageUrl ->
                                 use! coverImageStream = http.GetStreamAsync(coverImageUrl: string)
-                                coverImage <- new Discord.Image(coverImageStream: System.IO.Stream) |> System.Nullable
-                            | None -> ()
-                            let! _ = guild.CreateEventAsync(name, startTime, Discord.GuildScheduledEventType.External,
-                                Discord.GuildScheduledEventPrivacyLevel.Private, description, System.Nullable endTime, System.Nullable(), location, coverImage)
-                            ()
+                                let! _ = create (new Discord.Image(coverImageStream: System.IO.Stream) |> System.Nullable)
+                                ()
+                            | None ->
+                                let! _ = create (System.Nullable())
+                                ()
                         | true, existingDiscordEvent ->
                             if existingDiscordEvent.Name = name
                                 && existingDiscordEvent.StartTime = startTime
@@ -67,13 +69,7 @@ task {
                                 && existingDiscordEvent.Location = location
                             then () else // Minimise request count
                             printfn $"Modifing '{location}' event '{name}' for '{guild}' with cover image {coverImageUrl}..."
-                            let mutable coverImage = System.Nullable()
-                            match coverImageUrl with
-                            | Some coverImageUrl ->
-                                use! coverImageStream = http.GetStreamAsync(coverImageUrl: string)
-                                coverImage <- new Discord.Image(coverImageStream: System.IO.Stream) |> System.Nullable
-                            | None -> ()
-                            do! existingDiscordEvent.ModifyAsync(fun props ->
+                            let modify coverImage = existingDiscordEvent.ModifyAsync(fun props ->
                                 props.Name <- name
                                 props.StartTime <- startTime
                                 props.Type <- Discord.GuildScheduledEventType.External
@@ -84,6 +80,11 @@ task {
                                 props.Location <- location
                                 props.CoverImage <- coverImage |> Discord.Optional
                             )
+                            match coverImageUrl with
+                            | Some coverImageUrl ->
+                                use! coverImageStream = http.GetStreamAsync(coverImageUrl: string)
+                                do! modify (new Discord.Image(coverImageStream: System.IO.Stream) |> System.Nullable)
+                            | None -> do! modify (System.Nullable())
                     with exn ->
                         printfn $"Error processing '{location}' event '{name}' for '{guild}'.\n{exn}"
                         completion.TrySetException exn |> ignore // Don't let the GitHub Action succeed
