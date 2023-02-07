@@ -2,7 +2,7 @@
 #r "nuget: Discord.NET, 3.9.0"
 // F#-related Discord servers that may schedule events
 let sourceGuilds = Map [
-    716980335593914419UL, ("https://discord.gg/bpTJMbSSYK", "https://raw.githubusercontent.com/fabulous-dev/Fabulous/v2.1/logo/logo-title.png") // Fabulous
+    716980335593914419UL, ("https://discord.gg/bpTJMbSSYK", "https://raw.githubusercontent.com/fabulous-dev/Fabulous/main/logo/logo-title.png") // Fabulous
     940511234179096586UL, ("https://discord.gg/D5QXvQrBVa", "https://cdn.discordapp.com/icons/940511234179096586/c48720faa474402341a73385e911510b.png") // Fantomas
 ]
 task {
