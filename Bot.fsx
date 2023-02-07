@@ -1,5 +1,6 @@
+#i "nuget: https://www.myget.org/F/discord-net/api/v3/index.json"
 #r "nuget: Ical.NET, 4.2.0"
-#r "nuget: Discord.NET, 3.9.0"
+#r "nuget: Discord.NET, 3.9.0-build-20230206.12" // A MyGet version to work around https://github.com/discord-net/Discord.Net/issues/2576
 // F#-related Discord servers that may schedule events
 let sourceGuilds = Map [
     716980335593914419UL, ("https://discord.gg/bpTJMbSSYK", "https://raw.githubusercontent.com/fabulous-dev/Fabulous/main/logo/logo-title.png") // Fabulous
@@ -84,7 +85,9 @@ task {
                                 props.Location <- location
                                 props.CoverImage <- coverImage |> Discord.Optional
                             )
-                    with exn -> printfn $"Error processing '{location}' event '{name}' for '{guild}'.\n{exn}"
+                    with exn ->
+                        printfn $"Error processing '{location}' event '{name}' for '{guild}'.\n{exn}"
+                        reraise() // Don't let the GitHub Action succeed
             }
             for e in calendarEvents do
                 do! syncOneEvent "F# Events Calendar https://sergeytihon.com/f-events/" e.Summary e.DtStart.AsDateTimeOffset e.Description e.DtEnd.AsDateTimeOffset None
