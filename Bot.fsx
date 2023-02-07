@@ -46,7 +46,7 @@ task {
                         let endTime = min endTime maxEnd
                         match (existingDiscordEvents.Remove: _ -> _ * _) (location, name) with
                         | false, _ ->
-                            printfn $"Creating '{location}' event '{name}' for '{guild}'..."
+                            printfn $"Creating '{location}' event '{name}' for '{guild}' with cover image {coverImageUrl}..."
                             let mutable coverImage = System.Nullable()
                             match coverImageUrl with
                             | Some coverImageUrl ->
@@ -66,7 +66,7 @@ task {
                                 && existingDiscordEvent.EndTime.GetValueOrDefault() = endTime
                                 && existingDiscordEvent.Location = location
                             then () else // Minimise request count
-                            printfn $"Modifing '{location}' event '{name}' for '{guild}'..."
+                            printfn $"Modifing '{location}' event '{name}' for '{guild}' with cover image {coverImageUrl}..."
                             let mutable coverImage = System.Nullable()
                             match coverImageUrl with
                             | Some coverImageUrl ->
