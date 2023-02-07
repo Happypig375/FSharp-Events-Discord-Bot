@@ -87,7 +87,7 @@ task {
                             )
                     with exn ->
                         printfn $"Error processing '{location}' event '{name}' for '{guild}'.\n{exn}"
-                        reraise() // Don't let the GitHub Action succeed
+                        completion.TrySetException exn |> ignore // Don't let the GitHub Action succeed
             }
             for e in calendarEvents do
                 do! syncOneEvent "F# Events Calendar https://sergeytihon.com/f-events/" e.Summary e.DtStart.AsDateTimeOffset e.Description e.DtEnd.AsDateTimeOffset None
