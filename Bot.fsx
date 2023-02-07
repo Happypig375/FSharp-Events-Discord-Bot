@@ -94,7 +94,7 @@ task {
                 for e in e do
                     do! syncOneEvent location e.Name e.StartTime e.Description
                          (if e.EndTime.HasValue then e.EndTime.GetValueOrDefault() else e.StartTime.AddHours 1.)
-                         (Some <| if isNull e.CoverImageId then coverImageUrl else e.GetCoverImageUrl().Replace($"/{message.Guild.Id}", "") (* work around https://github.com/discord-net/Discord.Net/issues/2576 *))
+                         (Some <| if isNull e.CoverImageId then coverImageUrl else e.GetCoverImageUrl().Replace($"/716980335593914419", "").Replace($"/940511234179096586", "") (* work around https://github.com/discord-net/Discord.Net/issues/2576 *))
             for remainingDiscordEvent in existingDiscordEvents.Values do
                 if remainingDiscordEvent.StartTime > now then // Don't remove already started events
                     printfn $"Removing event '{remainingDiscordEvent.Name}' for '{guild}'..."
