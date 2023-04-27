@@ -1,5 +1,5 @@
 #r "nuget: Ical.NET, 4.2.0"
-#r "nuget: Discord.NET, 3.9.0"
+#r "nuget: Discord.NET, 3.10.0"
 // F#-related Discord servers that may schedule events
 let sourceGuilds = Map [
     716980335593914419UL, ("https://discord.gg/bpTJMbSSYK", "https://raw.githubusercontent.com/fabulous-dev/Fabulous/main/logo/logo-title.png") // Fabulous
