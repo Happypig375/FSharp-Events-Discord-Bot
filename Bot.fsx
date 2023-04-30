@@ -36,7 +36,7 @@ task {
             for guild in client.Guilds do
               try
                 if Map.containsKey guild.Id sourceGuilds then () else // Ignore source guilds
-                let existingDiscordEvents = System.Linq.Enumerable.ToDictionary (guild.Events |> Seq.filter (fun e -> e.Creator.Id = client.CurrentUser.Id), fun e -> e.Location, e.Name)
+                let existingDiscordEvents = System.Linq.Enumerable.ToDictionary (guild.Events |> Seq.filter (fun e -> e.Creator <> null (*Discord somehow drops creator info for events made long ago*) && e.Creator.Id = client.CurrentUser.Id), fun e -> e.Location, e.Name)
                 let syncOneEvent location name startTime description endTime coverImageUrl = task {
                     if filterEventByTime startTime endTime then
                         try
